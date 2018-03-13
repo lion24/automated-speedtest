@@ -2,6 +2,7 @@
 
 import time
 import sys
+import attr
 from abc import ABC, abstractmethod
 from selenium import webdriver
 from selenium.common.exceptions import (
@@ -12,12 +13,17 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-
+@attr.s(slots=True)
 class Provider(ABC):
-    def __init__(self, target):
-        self.target = target
+    target = attr.ib()
+
+    def __attrs_post_init__(self):
+        # As using selenium api > 2.x, this call should block until
+        # readyState is hit.
         self.driver_init()
-        self.driver.get(target)
+        self.driver.get(self.target)
+        self.providers = {}
+        self._lookup_table = {}
 
     def driver_init(self):
         options = webdriver.ChromeOptions()
@@ -27,8 +33,6 @@ class Provider(ABC):
         options.add_argument('--disable-gpu')
         options.add_argument('--lang=en_US')
         self.driver = webdriver.Chrome(chrome_options=options)
-        # As using selenium api > 2.x, this call should block until
-        # readyState is hit.
 
     def wait_for_clickable(self, element, timeout=90):
         time.sleep(2)  # Hack, when element is clicked, it remains active for a
@@ -50,12 +54,17 @@ class Provider(ABC):
             print("Unexpected error occured:", sys.exc_info()[0])
             raise
 
-    def cleanup(self, errno=0):
-        self.driver.close()
-        self.driver.quit()
-        self.driver = None
-        if errno:
-            sys.exit(errno)
+    def get_provider(self, cls):
+        found = []
+        if type(cls) is str:
+            cls = self._class_from_string(cls)
+
+    def _class_from_string(self, string):
+        if type(string) is str:
+            try:
+                return self._lookup_table[string]
+            except KeyError:
+                raise KeyError("No such provider found")
 
     @abstractmethod
     def cleanup(self, errno=0):

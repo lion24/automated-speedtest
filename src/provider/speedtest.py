@@ -1,11 +1,14 @@
 # coding: utf-8
-import sys
+import sys, attr
 from provider import Provider
 
-
+@attr.s
 class Speedtest(Provider):
-    def __init__(self):
-        super().__init__("http://beta.speedtest.net")
+    """ Speedtest.net class handler"""
+    target = attr.ib(init=False, default="http://beta.speedtest.net")
+
+    def __attrs_post_init__(self):
+        super().__attrs_post_init__()
 
     def run(self):
         try:

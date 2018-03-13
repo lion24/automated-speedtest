@@ -1,4 +1,5 @@
 selenium
+attrs
 flake8
 flake8-colors
 pylint
